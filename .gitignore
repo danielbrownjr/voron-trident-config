@@ -1,0 +1,17 @@
+# Klipper drops a timestamped copy of printer.cfg beside it on every SAVE_CONFIG.
+# They pile up forever and the real history lives in git now.
+printer-[0-9]*_[0-9]*.cfg
+
+# Mainsail/Fluidd "download config" and "download gcodes" archives.
+config-*.zip
+gcodes-*.zip
+
+# Rotated backups written by the tools themselves.
+*.backup
+*.bak
+crowsnest.conf.[0-9]*
+
+# Klipper/Moonraker runtime state, in case the repo is ever cloned straight
+# into printer_data/config.
+*.log
+.moonraker.conf.bkp
