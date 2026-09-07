@@ -45,6 +45,7 @@ printer.cfg
     ├── menu.cfg                custom LCD menu
     ├── filament.cfg            LOAD/UNLOAD_FILAMENT
     ├── display.cfg             Starscream glyphs and display_data
+    ├── extras.cfg              lights macros, host temp, arcs, firmware retraction
     ├── KAMP_Settings.cfg       (root copy — the one actually included)
     └── KAMP/                   Adaptive_Meshing, Line_Purge, Voron_Purge, Smart_Park
 ```
@@ -125,11 +126,9 @@ Nothing below has been changed — these are observations, not edits.
   sub-includes commented out because `macros.cfg` does them directly) and once
   inside `KAMP/` (the pristine upstream copy). Harmless, but only the root one
   matters.
-- **`[output_pin daylight]` has no macro.** The pin is defined on PC8 and the LCD
-  menu has lights on/off entries, but the `daylight_on_off.cfg` stub that was
-  meant to drive it was never written — it contained `[gcode macro: daylight_on]`,
-  which is not valid Klipper syntax, and an empty body. It has been removed; the
-  `[output_pin daylight]` definition is untouched.
+- ~~`[output_pin daylight]` has no macro.~~ Fixed — `extras.cfg` adds
+  `LIGHTS_ON` / `LIGHTS_OFF` / `LIGHTS_TOGGLE` with a brightness variable, since
+  the pin is PWM and the LCD menu only ever drove it fully on or off.
 
 ## History
 
