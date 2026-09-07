@@ -83,6 +83,26 @@ would undo it. It needs a shell on the printer, which currently means a trip to
 the office: [docs/ON-SITE.md](docs/ON-SITE.md) collects everything that is
 waiting on that.
 
+## Fixed
+
+`PRINT_START` and `PRINT_END` called seven commands that were never defined
+anywhere — five `STATUS_*` macros, `status_print_done`, and `CALIBRATE_Z`.
+Klipper aborts a macro on an unknown command, so `PRINT_START` died at the line
+after `G28`. It reads like the community template pasted in and never reconciled
+against what is actually installed.
+
+- Added `stealthburner_leds.cfg` from VoronDesign/Voron-Stealthburner, with its
+  own `[neopixel sb_leds]` block stripped — `nitehawk.cfg` owns that pin, and two
+  definitions would collide. Included from `nitehawk.cfg`, so the macros arrive
+  with the hardware they drive.
+- `status_print_done` → `status_ready`. There is no `status_print_done` upstream.
+- Dropped `CALIBRATE_Z`.
+- `KAMP_Settings.cfg` had `probe_dock_enable: True` pointing at Klicky's
+  `Attach_Probe` / `Dock_Probe`. Archiving Klicky broke that; set to `False`,
+  which is correct for a nozzle probe anyway.
+- `display_pins.cfg` declared `chain_count` twice — `3`, then `60`. The second
+  silently won. A mini12864 has 3 LEDs.
+
 ## Worth a look when you next touch it
 
 Nothing below has been changed — these are observations, not edits.
@@ -96,9 +116,11 @@ Nothing below has been changed — these are observations, not edits.
   longer needs.
 - **X endstop inversion changed recently.** `endstop_pin` went from `^!PB14` to
   `^PB14` between the 2026-08-14 backup and now.
-- **`z_calibration` is installed but unused.** `moonraker.conf` has an
-  `update_manager` entry for `protoloft/klipper_z_calibration`, but no
-  `[z_calibration]` section exists in any config file.
+- **`moonraker.conf` still has an `update_manager` entry for
+  `protoloft/klipper_z_calibration`**, pointing at a path that may not exist.
+  `PRINT_START` used to call its `CALIBRATE_Z`; that call is gone, since the PZ
+  probes with the nozzle and is its own Z endstop. The moonraker entry is
+  harmless but can be deleted.
 - **`KAMP_Settings.cfg` exists twice** — once at the root (included, with its
   sub-includes commented out because `macros.cfg` does them directly) and once
   inside `KAMP/` (the pristine upstream copy). Harmless, but only the root one
