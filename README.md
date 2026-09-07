@@ -79,7 +79,9 @@ Mainsail config/gcode zip exports, and the tools' own rotated `.backup` files.
 For automated pushes from the printer itself, see
 [docs/BACKUP.md](docs/BACKUP.md) — **read the reconcile section first**, because
 the repo has been cleaned and the Pi has not, so an unprepared first backup
-would undo it.
+would undo it. It needs a shell on the printer, which currently means a trip to
+the office: [docs/ON-SITE.md](docs/ON-SITE.md) collects everything that is
+waiting on that.
 
 ## Worth a look when you next touch it
 
