@@ -48,18 +48,49 @@ sudo service klipper stop && make flash FLASH_DEVICE=/dev/serial/by-id/<your id>
 The `[mcu nhk] serial:` line is a placeholder ending in `REPLACE_ME`. Replace it
 with the real `usb-Klipper_rp2040_*-if00` path from the `ls` above.
 
-## 3. Wiring — check these three before power
+## 3. Wiring — the PZ goes on the IO Port pads
 
-- **Power the PZ Probe at 3.3V, not 5V.** It accepts 3.3–5V, but its Trigger
-  output idles at whatever it is powered from, and RP2040 GPIO is not 5V
-  tolerant. At 5V you are driving 5V into a 3.3V input.
-- **The PZ does not go on the Nitehawk `PROBE` port.** LDO document that port as
-  24V. `nitehawk.cfg` lands the trigger on `gpio13`, the toolboard's X endstop
-  pin, which is plain 3.3V logic and is free because the X/Y endstops stay on the
-  mainboard. E3D ship the PZ with an endstop connector, which is the shape that
-  fits.
-- **X/Y endstops stay on the mainboard** (`PB14` / `PB13`). `nitehawk.cfg`
-  deliberately does not override them.
+From LDO's published pinout, the 2.54 mm **IO Port** pad header carries:
+
+```
+GND | 3V3 | FS (gpio3) | SU (gpio2)
+```
+
+That is the only 3.3 V on the board, and it happens to sit on the same header as
+two free GPIOs — so power and signal both come from one place:
+
+| PZ wire | Nitehawk |
+|---|---|
+| GND (brown) | IO Port `GND` |
+| PWR (red) | IO Port `3V3` |
+| Trigger (orange) | IO Port `FS` = `gpio3` |
+
+The other three wires on the PZ's 8-pin connector (RX, TX, UPDI, SCL, SDA) are
+for firmware updates and configuration — not needed for normal probing.
+
+**Why not the connectorised ports.** Every one of them would power the PZ at the
+wrong voltage:
+
+| Port | Pins |
+|---|---|
+| Neopixel (fan adapter) | `5V / GND / DATA` |
+| XY Endstop, JST-XH 4P | `GND / X gpio13 / Y gpio12 / 5V` |
+| PROBE, JST-XH 3P | `GND / ABL gpio10 / 24V` |
+
+The PZ's Trigger idles at whatever it is powered from, and RP2040 GPIO is **not**
+5 V tolerant. Feeding it from a 5 V pin means 5 V into a 3.3 V input, which needs
+a divider or a level shifter to be safe. The `3V3` pad removes the problem
+entirely.
+
+`gpio2` (`SU`) is the spare if `gpio3` is awkward. `gpio13` also works as a
+trigger input if you prefer the endstop connector — but take **power** from the
+`3V3` pad either way.
+
+The IO Port is bare 2.54 mm pads, so this needs a soldered pigtail rather than a
+plug. That is the only downside, and it beats a splitter plus level shifting.
+
+**X/Y endstops stay on the mainboard** (`PB14` / `PB13`). `nitehawk.cfg`
+deliberately does not override them.
 
 ## 4. Enable the toolhead
 
