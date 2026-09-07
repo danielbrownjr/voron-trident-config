@@ -9,34 +9,29 @@ Config for a 300 mm Voron Trident running Klipper + Mainsail.
 | X/Y/Z drivers | TMC2209, 0.7 A run / 0.4 A hold, 16 microsteps |
 | Z | 3 independent motors, 80:16 gear ratio, `z_tilt` |
 | Bed | Keenovo NTC 100K MGB18-104F39050L32, PID tuned |
-| Probe | Klicky (**currently disabled**, see below) |
-| Toolhead | SB2209 or SB2240 over CAN (**both currently disabled**) |
+| Probe | E3D Revo Voron PZ Probe — piezo, probes with the nozzle (**not yet installed**) |
+| Toolhead | LDO Nitehawk-SB, RP2040 over USB (**not yet installed**) |
+| Hotend | E3D Revo Voron, standard heater core and thermistor |
 | Display | FYSETC Mini12864 with a custom "Starscream" theme |
 | Extras | KAMP, Mainsail macros, OctoEverywhere, Crowsnest, Mobileraker |
 
-## ⚠ This config will not start Klipper as-is
+## Current state: no toolhead installed
 
-The whole toolhead is commented out. In `macros.cfg`:
+The printer boots and homes X and Y. It has no toolhead on it at all, so there
+is no extruder, no probe, and no way to trigger the Z endstop except by pressing
+it with a finger.
 
-```
-#[include configure_extruder.cfg]
-#[include sb2240.cfg]
-#[include gantry_homing.cfg]
-#[include klicky_probe/klicky-probe.cfg]
-#[include sb2209.cfg]
-```
+That is deliberate, and the config matches it: every toolhead include in
+`macros.cfg` is commented out, and so is `[include nitehawk.cfg]` at the bottom
+of `printer.cfg`. Klipper will not start if it is told about an MCU that is not
+plugged in, so the toolhead config stays inert until the hardware is on the
+machine.
 
-…and the `[extruder]` block inside `printer.cfg` is commented out too. So the
-active config has **no `[extruder]`, no `[probe]`, and no toolhead MCU**, while
-`[z_tilt]` and `[bed_mesh]` — both of which need a probe — are still live.
-
-The autosave block also still carries `[extruder]` PID values. Klipper rejects
-config sections it cannot match to a real object, so that alone is very likely to
-stop it booting until the extruder is back.
-
-This looks like a printer mid-toolhead-swap rather than a broken config. Nothing
-here has been "fixed" by guessing which toolhead is the live one — that choice is
-still yours to make.
+The incoming toolhead is an **LDO Nitehawk-SB** (RP2040, USB — not CAN) with an
+**E3D Revo Voron PZ Probe**. It is fully written up in `nitehawk.cfg` and turned
+on by following [docs/NITEHAWK-INSTALL.md](docs/NITEHAWK-INSTALL.md). Enabling it
+is one atomic change, because the PZ probes with the nozzle and therefore
+replaces the Z endstop at the same moment.
 
 ## Include tree
 
@@ -58,14 +53,16 @@ Not included by anything, kept deliberately:
 
 | File | |
 |---|---|
-| `sb2209.cfg` / `sb2240.cfg` | The two toolhead options — CAN MCU, chamber sensor, part fan, hotend fan, Stealthburner neopixel. Pick one |
-| `klicky_probe/` | Klicky probe macros. Needed by `z_tilt` and `bed_mesh` once re-enabled |
+| `nitehawk.cfg` | The incoming toolhead — extruder, Revo heater and thermistor, PZ probe, fans, Stealthburner LEDs, onboard ADXL345. Inert until [docs/NITEHAWK-INSTALL.md](docs/NITEHAWK-INSTALL.md) is followed |
 | `configure_extruder.cfg` | A single helper macro |
 | `gantry_homing.cfg` | `homing_override` — note it also redefines `[idle_timeout]`, which `printer.cfg` already sets |
 
-`KAMP/` and `klicky_probe/` are third-party. KAMP is managed by moonraker's
-`update_manager`, so treat that folder as vendored and expect updates to
-overwrite it.
+`KAMP/` is third-party and managed by moonraker's `update_manager`, so treat
+that folder as vendored and expect updates to overwrite it.
+
+`archive/` holds hardware that came off the machine — the SB2209 and SB2240
+CAN toolboards with their UUIDs, and the Klicky probe macros and dock
+coordinates. Nothing there is included by anything.
 
 ## Using this repo
 
@@ -87,8 +84,9 @@ Nothing below has been changed — these are observations, not edits.
   acceleration is low for a Trident. If that pairing is a leftover from
   commissioning rather than a deliberate choice, it is leaving a lot on the table.
 - **Stale bed mesh.** The saved `default` mesh is 4 × 3, but `[bed_mesh]` now asks
-  for `probe_count: 5, 5`. The mesh predates the current settings; re-run
-  `BED_MESH_CALIBRATE` once the probe is back.
+  for `probe_count: 5, 5`. It also insets to `35, 25` / `290, 278` to keep
+  Klicky's offset probe on the bed — which the PZ, probing with the nozzle, no
+  longer needs.
 - **X endstop inversion changed recently.** `endstop_pin` went from `^!PB14` to
   `^PB14` between the 2026-08-14 backup and now.
 - **`z_calibration` is installed but unused.** `moonraker.conf` has an
