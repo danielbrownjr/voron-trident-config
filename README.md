@@ -76,6 +76,11 @@ cd ~/printer_data/config && git init && git remote add origin <this repo> && git
 `printer-<timestamp>.cfg` copies Klipper writes on every `SAVE_CONFIG`, the
 Mainsail config/gcode zip exports, and the tools' own rotated `.backup` files.
 
+For automated pushes from the printer itself, see
+[docs/BACKUP.md](docs/BACKUP.md) — **read the reconcile section first**, because
+the repo has been cleaned and the Pi has not, so an unprepared first backup
+would undo it.
+
 ## Worth a look when you next touch it
 
 Nothing below has been changed — these are observations, not edits.

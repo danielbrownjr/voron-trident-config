@@ -15,3 +15,11 @@ crowsnest.conf.[0-9]*
 # into printer_data/config.
 *.log
 .moonraker.conf.bkp
+
+# Never let a token reach a public repo. klipper-backup keeps its .env in
+# ~/klipper-backup/ and excludes these itself, but the cost of naming them here
+# is nothing and the cost of missing one is a revoked token at best.
+.env
+*.env
+secrets.conf
+*.token
