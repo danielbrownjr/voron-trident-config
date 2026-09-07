@@ -14,24 +14,41 @@ the network, the toolhead, and backups.
    something breaks you can diff instead of guess.
 3. **Toolhead last**, with the other two as a safety net under it.
 
-## Network topology, for reference
+## Network topology
 
 ```
-home router  10.44.23.1        WireGuard SERVER, SSH open
+ArgonOne     10.44.23.1        WireGuard SERVER (Debian 12, Raspberry Pi)
+                               also 192.168.1.150 on the home LAN
 desktop      10.44.23.5        WireGuard client, full tunnel (0.0.0.0/0)
-GL.iNet Opal (office)          WireGuard CLIENT  -> home server
-  └─ Voron Trident             office LAN, behind the Opal
+Opal         10.44.23.4        WireGuard client, peer name "tangly"
+  └─ Trident 192.168.8.137     office LAN 192.168.8.0/24 (GL.iNet default)
 ```
 
-The tunnel is healthy — the desktop handshakes fine. What does not work is
-reaching *into* the office side. A scan of the whole `10.44.23.0/24` from the
-desktop finds only the home router: the Opal does not answer on its own tunnel
-address, and nothing behind it is reachable.
+SSH: `daniel@10.44.23.1` for the Pi, `pi@192.168.8.137` for the printer,
+`root` + web-panel password for the Opal.
 
-That is GL.iNet's default behaviour, not a broken tunnel. The WireGuard client
-interface sits in a firewall zone that rejects input and does not forward into
-the LAN, so the router is invisible from the server side and so is everything
-behind it.
+## Diagnosis — the home half is already done
+
+The tunnel is healthy. The `tangly` peer handshakes every couple of minutes with
+tens of GiB through it, so the Opal is connected and talking.
+
+What was missing was a route: every peer in `wg0.conf` was a bare `/32`, so the
+Pi had no idea `192.168.8.0/24` existed or which tunnel to send it down.
+**Fixed** — `192.168.8.0/24` now sits on the `tangly` peer's `AllowedIPs`.
+(It had briefly been added to the *Desktop* peer, which pointed the route at a
+machine on the home LAN that cannot reach the office. Corrected.)
+
+That leaves exactly one blocker, and it is on the Opal:
+
+| Test, from the Pi | Result |
+|---|---|
+| `ping 10.44.23.4` — Opal on its tunnel IP | no reply |
+| `ping 192.168.8.137` — printer behind it | no reply |
+
+Both fail because GL.iNet puts the WireGuard client interface in a firewall zone
+that rejects **input** and **forward**. The router is invisible from the server
+side, and so is everything behind it. No amount of home-side configuration
+changes that — it has to be opened from the Opal's own LAN.
 
 ## 1. Open the Opal's LAN to the tunnel
 
@@ -49,11 +66,8 @@ Credentials, if you need SSH into it: user `root`, password is whatever you set
 for the web admin panel — GL.iNet has no factory-default password and keeps
 root in sync with the admin one.
 
-**Also needed, on the home side:** the Opal peer's `AllowedIPs` has to include
-the office LAN subnet, not just the Opal's `/32`, or the home router has no
-route to push printer-bound packets into the tunnel. That half you can do
-remotely — the home router at `10.44.23.1` has SSH open. `sudo wg show` there
-lists every peer with its allowed IPs and last handshake.
+**The home side is already done** — see the diagnosis above. After flipping the
+toggle, verify from the Pi with `ping -c3 192.168.8.137` before you pack up.
 
 ## 2. Tailscale on the printer
 
